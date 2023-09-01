@@ -1,4 +1,3 @@
-#include <windows.h> // for MS Windows
 #include <GL/glut.h> // GLUT, include glu.h and gl.h
 #include <cmath>
 #include <iostream>
@@ -8,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include "bitmap_image.hpp"
-#include "1805027_oldheader.h"
+#include "1805027.h"
 using namespace std;
 
 struct point
@@ -130,39 +129,35 @@ bitmap_image createBitmapObject()
     return image;
 }
 
-boolean isObscuredPointLight(PointLight *pointLight, Vector3D intersectionPoint)
+bool isObscuredPointLight(PointLight *pointLight, Vector3D intersectionPoint)
 {
     Vector3D direction = normalize(pointLight->pos - intersectionPoint);
-    Vector3D source = intersectionPoint + (direction)*0.0001;
+    Vector3D source = intersectionPoint + (direction) * 0.0001;
     Ray ray = Ray(source, direction);
     double distance = sqrt(dot((pointLight->pos - intersectionPoint), ((pointLight->pos - intersectionPoint))));
-    double t;
-    for (int i = 0; i < objects.size(); i++)
-    {
-        t = objects[i]->getIntersectingT(ray);
-        if (t > 0 && t < distance)
-        {
-            // cout << " in condition " << endl;
+    for(int i =0; i<objects.size(); i++){
+        double t = objects[i]->getIntersectingT(ray);
+        if(t > 0 && t < distance){
+           // cout << " in condition " << endl;
             return true;
         }
     }
-    t = rayFloorIntersection(ray);
-    if (t > 0 && t < distance)
-    {
+    double t = rayFloorIntersection(ray);
+    if(t > 0 && t < distance){
         // cout << " in condition of floor" << endl;
         return true;
     }
-    // cout << "falseeee" << endl;
+   // cout << "falseeee" << endl;
     return false;
 }
 
-boolean isObscuredSpotLight(SpotLight *spotLight, Vector3D intersectionPoint)
+bool isObscuredSpotLight(SpotLight* spotLight, Vector3D intersectionPoint)
 {
     Vector3D lightStart;
     Vector3D lightDirection;
     lightDirection = intersectionPoint - lightStart;
     Vector3D direction = normalize(spotLight->pos - intersectionPoint);
-    Vector3D source = intersectionPoint + (direction)*0.0001;
+    Vector3D source = intersectionPoint + (direction) * 0.0001;
 
     double angle = acos(dot(lightDirection, normalize(spotLight->direction))) * 180.0 / M_PI;
     if (angle > spotLight->cutoff * 180.0 / M_PI)
@@ -172,22 +167,18 @@ boolean isObscuredSpotLight(SpotLight *spotLight, Vector3D intersectionPoint)
 
     Ray ray = Ray(source, direction);
     double distance = sqrt(dot((spotLight->pos - intersectionPoint), ((spotLight->pos - intersectionPoint))));
-    double t;
-    for (int i = 0; i < objects.size(); i++)
-    {
-        t = objects[i]->getIntersectingT(ray);
-        if (t > 0 && t < distance)
-        {
+    for(int i =0; i<objects.size(); i++){
+        double t = objects[i]->getIntersectingT(ray);
+        if(t > 0 && t < distance){
             return true;
         }
     }
-    t = rayFloorIntersection(ray);
-    if (t > 0 && t < distance)
-    {
+    double t = rayFloorIntersection(ray);
+    if(t > 0 && t < distance){
         return true;
     }
     return false;
-    // t > 0 and t <distance between intersection point and light source
+    //t > 0 and t <distance between intersection point and light source
 }
 
 // boolean isObscuredPointLight(PointLight *pointLight, Vector3D intersectionPoint)
@@ -253,15 +244,14 @@ boolean isObscuredSpotLight(SpotLight *spotLight, Vector3D intersectionPoint)
 //     return false;
 // }
 
-Color calculateColorCoefficients(Vector3D intersectionPoint, Color intersectionPointColor, Vector3D normal, Object *object, int level)
+Color calculateColorCoefficients(Vector3D intersectionPoint, Color intersectionPointColor, Vector3D normal, Object *object,int level)
 {
     Color color;
     normal = normalize(normal);
-    Vector3D toPoint = intersectionPoint - pos;
     // Ambient
     if (object == NULL)
     {
-        color = intersectionPointColor * checkerBoard_color.r; // ambient of floor * intersection point color
+        color = intersectionPointColor * checkerBoard_color.r; //ambient of floor * intersection point color
     }
 
     else
@@ -281,79 +271,63 @@ Color calculateColorCoefficients(Vector3D intersectionPoint, Color intersectionP
             toSource = normalize(toSource);
             double distance = sqrt(dot((pointLights[i]->pos - intersectionPoint), ((pointLights[i]->pos - intersectionPoint))));
             double scaling_factor = std::exp(-distance * distance * pointLights[i]->falloff);
-            if (dot(normal, toSource) < 0)
-            {
-                lambert += 0;
-            }
-            else
+            if (dot(normal, toSource) > 0)
             {
                 lambert += dot(normal, toSource) * scaling_factor;
             }
 
             // cout << "dot  " << dot(normal, toSource) << endl;
-            Vector3D reflected = reflectedRay(toPoint, normal);
+            Vector3D reflected = reflectedRay(normalize(intersectionPoint - pos), normal);
             if (object != NULL)
             {
-                if (dot(reflected, toSource) < 0)
+                if (dot(reflected, toSource) > 0)
                 {
-                    phong += 0;
-                }
-                else
-                {
-                    phong += dot(reflected, toSource) * scaling_factor;
+                    phong += pow(dot(reflected, toSource), object->shine ) * scaling_factor;
                 }
                 // phong += std::pow(dot(reflected, toSource), object->shine) * scaling_factor;
             }
         }
 
-        else
-        {
+        else{
             // cout << "falseeeeeeeeeeee" <<endl;
         }
     }
 
     for (int i = 0; i < spotLights.size(); i++)
     {
-        if (!isObscuredSpotLight(spotLights[i], intersectionPoint))
+        if (!isObscuredSpotLight(spotLights[i], intersectionPoint ))
         {
             // cout << " FALSEE " << endl;
             Vector3D toSource = spotLights[i]->pos - intersectionPoint;
             toSource = normalize(toSource);
             double distance = sqrt(dot((spotLights[i]->pos - intersectionPoint), ((spotLights[i]->pos - intersectionPoint))));
             double scaling_factor = std::exp(-distance * distance * spotLights[i]->falloff);
-            if (dot(normal, toSource) < 0)
-            {
-                lambert += 0;
-            }
-            else
+            if (dot(normal, toSource) > 0)
             {
                 lambert += dot(normal, toSource) * scaling_factor;
             }
             // cout << "lambert " << lambert << endl;
-            Vector3D reflected = reflectedRay(toPoint, normal);
+            Vector3D reflected = reflectedRay(normalize(intersectionPoint - pos), normal);
             if (object != NULL)
             {
-                if (dot(reflected, toSource) < 0)
+                if (dot(reflected, toSource) > 0)
                 {
-                    phong += 0;
-                }
-                else
-                {
-                    phong += dot(reflected, toSource) * scaling_factor;
+                    phong += pow(dot(reflected, toSource), object->shine ) * scaling_factor;
                 }
             }
         }
-
-        else
-        {
+        else{
             //  cout << "TRUEEE" <<endl;
         }
     }
+    
+    
+    
     if (object == NULL)
     {
-        color.r = color.r + (lambert * checkerBoard_color.g);
-        color.g = color.g + (lambert * checkerBoard_color.g);
-        color.b = color.b + (lambert * checkerBoard_color.g);
+        color.r = color.r + (lambert * checkerBoard_color.g) * color.r;
+        color.g = color.g + (lambert * checkerBoard_color.g) * color.g;
+        color.b = color.b + (lambert * checkerBoard_color.g) * color.b;
         // cout << "color " << color.r << " " << color.g << " " << color.b << endl;
     }
     else
@@ -365,12 +339,13 @@ Color calculateColorCoefficients(Vector3D intersectionPoint, Color intersectionP
 
     if (level < recursion_level)
     {
-        Vector3D reflected = reflectedRay(toPoint, normal);
+        Vector3D reflected = reflectedRay(normalize(intersectionPoint - pos), normal);
         reflected = normalize(reflected);
         Ray ray = Ray(intersectionPoint + reflected * 0.0001, reflected);
         double t;
         double index = -1;
         double min_t = std::numeric_limits<double>::max();
+        Color color_;
         for (int i = 0; i < objects.size(); i++)
         {
             t = objects[i]->getIntersectingT(ray);
@@ -379,9 +354,10 @@ Color calculateColorCoefficients(Vector3D intersectionPoint, Color intersectionP
                 min_t = t;
                 object = objects[i];
                 index = i;
+                color_ = object->color;
             }
         }
-        Color color_ = object->color;
+        
         t = rayFloorIntersection(ray);
         if(t < min_t && t > 0)
         {
@@ -478,10 +454,10 @@ void capture()
                 int y = static_cast<int>(floor(intersectionPoint.y) / checkerBoardWidth);
 
                 Vector3D normal = Vector3D(0, 0, 1);
-                if (dot(rayDir, normal) > -0.00001)
-                {
-                    normal = normal * -1;
-                }
+                // if (dot(rayDir, normal) > -0.00001)
+                // {
+                //     normal = normal * -1;
+                // }
                 // Determine the color based on the square's coordinates
 
                 if ((x + y) % 2 == 0)
@@ -492,7 +468,7 @@ void capture()
                 {
                     color = Color(0, 0, 0);
                 }
-                calculateColorCoefficients(ray.start + ray.dir * min_t, color, normal, NULL,0);
+                color = calculateColorCoefficients(ray.start + ray.dir * min_t, color, normal, NULL,0);
                 image.set_pixel(j, i, 255 * color.r, 255 * color.g, 255 * color.b);
             }
             else
@@ -807,7 +783,6 @@ void loaddata()
 
             file >> ambient >> diffuse >> specular >> reflection;
             file >> shininess;
-            // Object *obj = new Cube(Vector3D(px_1, py_1, pz_1), side, Color(color_r, color_g, color_b), ambient, diffuse, specular, reflection, shininess);
             Object *obj = new Cube(Vector3D(px_1, py_1, pz_1), side, Color(color_r, color_g, color_b), ambient, diffuse, specular, reflection, shininess);
             objects.push_back(obj);
         }
